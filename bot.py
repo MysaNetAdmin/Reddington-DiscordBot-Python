@@ -1,6 +1,7 @@
 import json
 import log
 import discord
+import datetime
 from discord.ext import commands
 
 
@@ -23,6 +24,9 @@ bot = commands.Bot(command_prefix=get_prefix())
 async def on_ready():
     await bot.change_presence(activity=discord.Game("red!help"))
     log.info("Logged in as " + bot.user.name)
+    # Displaying all the guilds the bot is connected to
+    for guild in bot.guilds:
+        log.info("Connected to: " + guild.name)
 
 
 @bot.command(description="Returns pong and the time taken to anwser !")
@@ -35,7 +39,7 @@ async def hello(context):
     await context.send("Wazaa !")
 
 
-@bot.command()
+@bot.command(description="Stops the bot")
 @commands.is_owner()
 async def stop(context):
     await context.send("Stopping bot !")
@@ -52,11 +56,21 @@ async def avatar(context, members: commands.Greedy[discord.Member]):
             await context.send(member.avatar_url)
 
 
-async def list_servers():
-    await bot.wait_until_ready()
-    for guild in bot.guilds:
-        log.info("Connected to: " + guild.name)
+@bot.command(description="Delete x messages that are before 14 days in the current channel")
+async def clear(context, number: int):
+    channel = context.message.channel
+    messages = await channel.history(limit=number, after=datetime.datetime.now() - datetime.timedelta(days=13)).flatten()
+    if len(messages) == 0:
+        await context.send("No messages found before 14 days.")
+    else:
+        await channel.delete_messages(messages)
+        await context.send(context.author.name + " deleted " + str(len(messages)) + " messages")
 
-bot.loop.create_task(list_servers())
+
+@bot.command(description="Test association command via private message")
+async def asso(context):
+    channel = context.get_channel(669640695912464434)
+    await channel.send("Coucou")
+
 log.info("Discord version: " + str(discord.version_info))
 bot.run(get_discord_token())
